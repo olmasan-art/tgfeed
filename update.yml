@@ -1,0 +1,21 @@
+name: update
+on:
+  schedule: [{cron: "*/15 * * * *"}]
+  workflow_dispatch:
+  push: {paths: ["channels.txt", "fetch.py"]}
+permissions: {contents: write}
+concurrency: update
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install requests beautifulsoup4
+      - run: python fetch.py
+      - run: |
+          git config user.name bot
+          git config user.email bot@users.noreply.github.com
+          git add -A data
+          git diff --cached --quiet || (git commit -m update && git pull --rebase && git push)

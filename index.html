@@ -1,0 +1,78 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>فید تلگرام</title>
+<style>
+:root{--bg:#fff;--chat:#d9e3ea;--bub:#fff;--txt:#000;--sub:#707579;--acc:#3390ec;--hov:#f4f4f5;--line:#e4e4e4}
+:root[data-t=dark]{--bg:#212121;--chat:#0f0f0f;--bub:#212121;--txt:#fff;--sub:#a0a0a0;--acc:#8774e1;--hov:#2c2c2c;--line:#303030}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--txt);height:100dvh;display:flex;overflow:hidden}
+a{color:var(--acc);text-decoration:none}
+#side{width:340px;border-inline-end:1px solid var(--line);display:flex;flex-direction:column}
+#main{flex:1;display:flex;flex-direction:column;background:var(--chat);min-width:0}
+.top{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--line);min-height:56px;position:relative;padding-top:max(8px,env(safe-area-inset-top))}
+.top button{background:none;border:0;color:var(--sub);font-size:22px;cursor:pointer;padding:6px 10px}
+#back{display:none}
+#list{overflow:auto;flex:1}
+.row{display:flex;gap:12px;align-items:center;padding:10px 14px;color:var(--txt)}
+.row:hover{background:var(--hov)}.row.on{background:var(--acc);color:#fff}.row.on span,.row.on small{color:#ffffffcc}
+.av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+.mid{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.4}
+.mid b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mid span,small{color:var(--sub);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#menu{position:absolute;top:52px;inset-inline-start:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 20px #0003;z-index:5;display:none;min-width:180px;padding:6px}
+#menu.on{display:block}#menu a{display:block;padding:9px 14px;border-radius:8px;color:var(--txt);cursor:pointer}#menu a:hover{background:var(--hov)}
+#msgs{flex:1;overflow:auto;padding:12px 10px 24px}
+.day{text-align:center;margin:12px 0}.day span{background:#0006;color:#fff;border-radius:14px;padding:2px 12px;font-size:13px}
+.bub{background:var(--bub);border-radius:14px;max-width:min(560px,92%);margin:6px 0;padding:6px 10px;box-shadow:0 1px 2px #0002;overflow:hidden;word-wrap:break-word}
+.bub .t{white-space:pre-wrap;unicode-bidi:plaintext}
+.ph{display:block;max-width:calc(100% + 20px);width:calc(100% + 20px);margin:-6px -10px 6px;max-height:420px;object-fit:cover}
+.bub .ph+.ph{margin-top:2px}
+.vid{position:relative;display:block;margin:-6px -10px 6px}.vid img{width:100%;max-height:360px;object-fit:cover;display:block;background:#000;min-height:120px}
+.vid i{position:absolute;inset:0;margin:auto;width:56px;height:56px;border-radius:50%;background:#0009;color:#fff;font-style:normal;text-align:center;line-height:56px;font-size:24px}
+.fwd{color:var(--acc);font-size:13px;font-weight:600}
+.lp{border-inline-start:3px solid var(--acc);padding:2px 10px;margin:6px 0;font-size:14px}.lp b{display:block}.lp span{color:var(--sub)}
+.ft{display:flex;gap:10px;justify-content:flex-end;color:var(--sub);font-size:12px;margin-top:2px}
+.empty{text-align:center;color:var(--sub);margin-top:30vh}
+@media(max-width:800px){#side{width:100%;border:0}#main{display:none}body.chat #side{display:none}body.chat #main{display:flex}#back{display:block}}
+</style></head><body>
+<div id="side"><div class="top"><button id="mb">☰</button><b style="font-size:18px">کانال‌ها</b>
+<div id="menu"><a id="th">🌓 تم تیره / روشن</a><a id="rf">🔄 بارگذاری مجدد</a><a href="https://github.com" target="_blank">ℹ️ درباره</a></div></div>
+<div id="list"></div></div>
+<div id="main"><div class="top" id="topbar"><button id="back">→</button><div id="head" style="display:flex;gap:12px;align-items:center;flex:1;min-width:0"></div></div>
+<div id="msgs"><p class="empty">یک کانال انتخاب کن</p></div></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fa=(d,o)=>new Date(d).toLocaleString('fa-IR',o),tm=d=>d?fa(d,{hour:'2-digit',minute:'2-digit'}):'',dy=d=>d?fa(d,{day:'numeric',month:'long',year:'numeric'}):'';
+const av=c=>c.avatar?`<img class="av" src="${esc(c.avatar)}" alt="">`:`<div class="av">${esc(c.title[0])}</div>`;
+const J=async u=>{const r=await fetch(u+'?v='+Date.now());if(!r.ok)throw 0;return r.json()};
+let chans=[];
+const root=document.documentElement;
+try{root.dataset.t=localStorage.t||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}catch{}
+$('#th').onclick=()=>{root.dataset.t=root.dataset.t=='dark'?'light':'dark';try{localStorage.t=root.dataset.t}catch{}};
+$('#rf').onclick=()=>location.reload();
+$('#mb').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('on')};
+document.onclick=()=>$('#menu').classList.remove('on');
+$('#back').onclick=()=>{location.hash=''};
+function list(){$('#list').innerHTML=chans.map(c=>`<a class="row" href="#${esc(c.id)}">${av(c)}<div class="mid"><b>${esc(c.title)}</b><span>${esc(c.last||'')}</span></div><small>${tm(c.time)}</small></a>`).join('')}
+async function open(){
+ const id=decodeURIComponent(location.hash.slice(1)),c=chans.find(x=>x.id==id);
+ document.body.classList.toggle('chat',!!c);
+ document.querySelectorAll('.row').forEach(r=>r.classList.toggle('on',r.getAttribute('href')=='#'+id));
+ if(!c)return;
+ $('#head').innerHTML=`${av(c)}<div class="mid"><b>${esc(c.title)}</b><span>${esc(c.subs||c.desc||'')}</span></div>`;
+ const box=$('#msgs');box.innerHTML='<p class="empty">در حال بارگذاری…</p>';
+ let d;try{d=await J(`data/${id}.json`)}catch{box.innerHTML='<p class="empty">خطا در بارگذاری</p>';return}
+ let h='',last='';
+ for(const p of d.posts){const day=dy(p.date);if(day!=last){h+=`<div class="day"><span>${day}</span></div>`;last=day}
+  const tg=`https://t.me/${id}/${p.id}`;
+  h+=`<div class="bub">`+(p.fwd?`<div class="fwd">↪ ${esc(p.fwd)}</div>`:'')
+  +p.photos.map(s=>`<a href="${esc(s)}" target="_blank"><img class="ph" src="${esc(s)}" loading="lazy"></a>`).join('')
+  +(p.hasvideo?`<a class="vid" href="${tg}" target="_blank">${p.video?`<img src="${esc(p.video)}" loading="lazy">`:'<div style="height:160px;background:#000"></div>'}<i>▶</i></a>`:'')
+  +(p.html?`<div class="t">${p.html}</div>`:'')
+  +(p.link?`<a class="lp" href="${esc(p.link.url)}" target="_blank" style="display:block;color:inherit"><b>${esc(p.link.title)}</b><span>${esc(p.link.desc)}</span></a>`:'')
+  +`<div class="ft">${p.views?`<span>👁 ${esc(p.views)}</span>`:''}<span>${tm(p.date)}</span><a href="${tg}" target="_blank">↗</a></div></div>`}
+ box.innerHTML=h||'<p class="empty">پستی نیست</p>';box.scrollTop=box.scrollHeight;
+}
+addEventListener('hashchange',open);
+J('data/channels.json').then(c=>{chans=c;list();open()}).catch(()=>$('#list').innerHTML='<p class="empty" style="margin:30px">هنوز داده‌ای نیست. اکشن آپدیت رو یک‌بار اجرا کن.</p>');
+</script></body></html>
